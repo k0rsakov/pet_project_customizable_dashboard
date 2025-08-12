@@ -50,8 +50,8 @@ conn, df = load_data()
 
 # Get min and max values for price slider
 if "price_of_order" in df.columns and len(df) > 0:
-    min_price = float(conn.execute("SELECT MIN(price_of_order) FROM orders").fetchone()[0])
-    max_price = float(conn.execute("SELECT MAX(price_of_order) FROM orders").fetchone()[0])
+    min_price = int(conn.execute("SELECT MIN(price_of_order) FROM orders").fetchone()[0])
+    max_price = int(conn.execute("SELECT MAX(price_of_order) FROM orders").fetchone()[0])
 else:
     min_price = 0
     max_price = 1000
@@ -69,31 +69,38 @@ app.layout = html.Div([
             html.Div([
                 # Filter 1: Type User
                 html.Div([
-                    html.Label("Тип пользователя"),
+                    # Label removed
                     dcc.Dropdown(
                         id="type-user-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
                                  conn.execute("SELECT DISTINCT type_user FROM orders").fetchall()] if "type_user" in df.columns and len(df) > 0 else [],
                         multi=True,
-                        placeholder="Выберите тип пользователя",
+                        placeholder="Тип пользователя",
                     ),
                 ], className="filter-column"),
 
                 # Filter 2: Category Name
                 html.Div([
-                    html.Label("Категория"),
+                    # Label removed
                     dcc.Dropdown(
                         id="category-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
                                  conn.execute("SELECT DISTINCT category_name FROM orders").fetchall()] if "category_name" in df.columns and len(df) > 0 else [],
                         multi=True,
-                        placeholder="Выберите категорию",
+                        placeholder="Категория",
                     ),
                 ], className="filter-column"),
 
                 # Filter 3: Ship Date Range
                 html.Div([
-                    html.Label("Диапазон дат доставки"),
+                    # Add a small header for the date range
+                    html.Div("Диапазон дат доставки", style={
+                        "font-weight": "500",
+                        "margin-bottom": "8px",
+                        "font-size": "0.9rem",
+                        "color": "var(--primary-dark)",
+                    }),
+                    # DatePickerRange with proper placeholder properties
                     dcc.DatePickerRange(
                         id="date-range",
                         min_date_allowed=conn.execute("SELECT MIN(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
@@ -102,48 +109,71 @@ app.layout = html.Div([
                         end_date=conn.execute("SELECT MAX(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
                         display_format="YYYY-MM-DD",  # Changed format to YYYY-MM-DD
                         first_day_of_week=1,  # Monday as first day of week (Russian standard)
+                        start_date_placeholder_text="Начальная дата",
+                        end_date_placeholder_text="Конечная дата",
                     ),
                 ], className="filter-column"),
 
-                # Filter 4: Price Range
+                # Filter 4: Price Range - Complete redesign with explicit display
                 html.Div([
-                    html.Label("Диапазон цен"),
+                    # Header
+                    html.Div("Диапазон цен", style={
+                        "font-weight": "500",
+                        "margin-bottom": "12px",
+                        "font-size": "0.9rem",
+                        "color": "var(--primary-dark)",
+                    }),
+
+                    # Current price display
                     html.Div([
+                        html.Div(f"От: ₽{min_price}", id="price-min-display", style={
+                            "font-weight": "500",
+                            "font-size": "0.9rem",
+                            "color": "#5c6ac4",
+                            "margin-bottom": "5px",
+                        }),
+                        html.Div(f"До: ₽{max_price}", id="price-max-display", style={
+                            "font-weight": "500",
+                            "font-size": "0.9rem",
+                            "color": "#5c6ac4",
+                            "margin-bottom": "5px",
+                        }),
+                    ], style={"display": "flex", "justify-content": "space-between"}),
+
+                    # Price slider with visible styling
+                    html.Div(
                         dcc.RangeSlider(
                             id="price-slider",
                             min=min_price,
                             max=max_price,
                             value=[min_price, max_price],
-                            marks={},  # We'll update this dynamically
-                            tooltip={"placement": "bottom", "always_visible": True},
                             step=1,
+                            allowCross=False,
+                            tooltip={"placement": "bottom", "always_visible": True},
+                            marks=None,  # No fixed marks, using dynamic display instead
                         ),
-                        # Add a div to display current range values
-                        html.Div(id="price-display", style={
-                            "margin-top": "10px",
-                            "display": "flex",
-                            "justify-content": "space-between",
-                            "font-weight": "500",
-                            "color": "#5c6ac4",
-                        }),
-                    ]),
+                        style={
+                            "padding": "10px 0",
+                            "margin-top": "5px",
+                        },
+                    ),
                 ], className="filter-column"),
 
                 # Filter 5: Payment Type
                 html.Div([
-                    html.Label("Способ оплаты"),
+                    # Label removed
                     dcc.Dropdown(
                         id="payment-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
                                  conn.execute("SELECT DISTINCT type_of_payment FROM orders").fetchall()] if "type_of_payment" in df.columns and len(df) > 0 else [],
                         multi=True,
-                        placeholder="Выберите способ оплаты",
+                        placeholder="Способ оплаты",
                     ),
                 ], className="filter-column"),
 
                 # Filter 6: Map Type
                 html.Div([
-                    html.Label("Тип отображения карты"),
+                    # Label removed
                     dcc.Dropdown(
                         id="map-type-dropdown",
                         options=[
@@ -153,6 +183,7 @@ app.layout = html.Div([
                         ],
                         value="points",
                         clearable=False,
+                        placeholder="Тип отображения карты",
                     ),
                 ], className="filter-column"),
             ], className="filter-row"),
@@ -184,7 +215,6 @@ app.layout = html.Div([
 def update_map(selected_users, selected_categories, start_date, end_date, price_range, selected_payments, map_type):
     # Build SQL query based on selected filters
     sql_query = "SELECT * FROM orders WHERE 1=1"
-    params = {}
 
     if selected_users and len(selected_users) > 0:
         placeholders = ", ".join([f"'{user}'" for user in selected_users])
@@ -296,19 +326,25 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
     # Return the HTML representation of the map
     return m._repr_html_()
 
-# Callback to update the price display with current range values
+# Callback to update min price display
 @app.callback(
-    Output("price-display", "children"),
+    Output("price-min-display", "children"),
     [Input("price-slider", "value")],
 )
-def update_price_display(value):
-    if value is None:
-        value = [min_price, max_price]
+def update_price_min_display(value):
+    if not value:
+        return f"От: ₽{min_price}"
+    return f"От: ₽{int(value[0])}"
 
-    return [
-        html.Span(f"От: ₽{int(value[0])}"),
-        html.Span(f"До: ₽{int(value[1])}"),
-    ]
+# Callback to update max price display
+@app.callback(
+    Output("price-max-display", "children"),
+    [Input("price-slider", "value")],
+)
+def update_price_max_display(value):
+    if not value:
+        return f"До: ₽{max_price}"
+    return f"До: ₽{int(value[1])}"
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -9,7 +9,7 @@
   --card-bg: #ffffff;
   --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   --border-radius: 8px;
-  --filter-height: 90px;
+  --filter-height: 70px; /* Reduced height since we removed labels */
 }
 
 body {
@@ -56,7 +56,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   margin: 0 -10px;
-  align-items: flex-end;
+  align-items: center; /* Changed to center alignment for better look without labels */
   min-height: var(--filter-height);
 }
 
@@ -65,15 +65,6 @@ h1 {
   min-width: 180px;
   padding: 0 10px;
   margin-bottom: 15px;
-}
-
-/* Label styling */
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--primary-dark);
-  font-size: 0.9rem;
 }
 
 /* Map container */
@@ -92,10 +83,17 @@ label {
   border-radius: calc(var(--border-radius) - 4px);
 }
 
-/* Dropdown styling */
+/* Dropdown styling - updated for placeholder emphasis */
 .Select-control {
   border-radius: var(--border-radius) !important;
   border: 1px solid #d9e1eb !important;
+  height: 38px !important; /* Consistent height */
+}
+
+.Select-placeholder {
+  color: var(--primary-dark) !important;
+  opacity: 0.7 !important;
+  font-weight: 500 !important;
 }
 
 .Select-menu-outer {
@@ -107,10 +105,10 @@ label {
   box-shadow: 0 0 0 1px var(--primary-light) !important;
 }
 
-/* DatePicker styling - Enhanced */
+/* DatePicker styling */
 .DateInput {
   border-radius: var(--border-radius) !important;
-  width: 100px !important; /* Fixed width for date inputs */
+  width: 110px !important; /* Increased width for date inputs */
 }
 
 .DateInput_input {
@@ -133,6 +131,7 @@ label {
   display: flex !important;
   align-items: center !important;
   padding: 2px !important;
+  height: 38px !important; /* Consistent height */
 }
 
 .DateRangePickerInput_arrow {
@@ -186,31 +185,68 @@ label {
   border: 1px solid var(--primary-color) !important;
 }
 
-/* RangeSlider styling */
+/* RangeSlider styling - MAJOR enhancement */
+.rc-slider {
+  height: 20px !important; /* Increased height for better visibility */
+  padding: 10px 0 !important;
+}
+
+.rc-slider-rail {
+  height: 6px !important; /* Thicker rail */
+  background-color: #e9ecef !important;
+  border-radius: 6px !important;
+}
+
 .rc-slider-track {
+  height: 6px !important; /* Thicker track */
   background-color: var(--primary-color) !important;
+  border-radius: 6px !important;
 }
 
 .rc-slider-handle {
   border: solid 2px var(--primary-color) !important;
   background-color: white !important;
+  width: 18px !important; /* Larger handle */
+  height: 18px !important;
+  margin-top: -6px !important; /* Adjust for center alignment */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important; /* Add shadow to handle for visibility */
+}
+
+.rc-slider-handle:focus {
+  box-shadow: 0 0 0 3px var(--primary-light) !important;
+  border-color: var(--primary-color) !important;
 }
 
 .rc-slider-handle:hover {
   border-color: var(--primary-dark) !important;
+  box-shadow: 0 0 0 3px rgba(92, 106, 196, 0.3) !important;
 }
 
 .rc-slider-handle-active:active {
   border-color: var(--primary-dark) !important;
-  box-shadow: 0 0 5px var(--primary-light) !important;
+  box-shadow: 0 0 0 5px rgba(92, 106, 196, 0.3) !important;
 }
 
-/* Price display styling */
-#price-display {
-  margin-top: 10px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
+/* Tooltip styling enhanced */
+.rc-slider-tooltip {
+  opacity: 1 !important;
+  z-index: 9999 !important;
+}
+
+.rc-slider-tooltip-inner {
+  background-color: var(--primary-dark) !important;
+  color: white !important;
+  font-size: 14px !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+  min-width: 40px !important;
+  padding: 5px 8px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+.rc-slider-tooltip-arrow {
+  border-top-color: var(--primary-dark) !important;
 }
 
 /* Responsive adjustments */
@@ -239,14 +275,6 @@ label {
   .map-container {
     height: 530px;
   }
-}
-
-/* Make tooltip text more readable */
-.rc-slider-tooltip {
-  font-size: 14px;
-  background-color: var(--primary-dark) !important;
-  opacity: 0.9 !important;
-  border-radius: var(--border-radius) !important;
 }
 
 /* Custom scrollbar */
