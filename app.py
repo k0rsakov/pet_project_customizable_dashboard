@@ -43,7 +43,7 @@ app = dash.Dash(
 )
 
 # Set the page title
-app.title = "Interactive Map Dashboard"
+app.title = "Интерактивная Карта Дашборда"
 
 # Load the data
 conn, df = load_data()
@@ -61,7 +61,7 @@ app.layout = html.Div([
     # Main container
     html.Div([
         # Header
-        html.H1("Interactive Map Dashboard", style={"textAlign": "center"}),
+        html.H1("Интерактивная Карта Дашборда", style={"textAlign": "center"}),
 
         # Filters card
         html.Div([
@@ -69,76 +69,87 @@ app.layout = html.Div([
             html.Div([
                 # Filter 1: Type User
                 html.Div([
-                    html.Label("User Type"),
+                    html.Label("Тип пользователя"),
                     dcc.Dropdown(
                         id="type-user-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
                                  conn.execute("SELECT DISTINCT type_user FROM orders").fetchall()] if "type_user" in df.columns and len(df) > 0 else [],
                         multi=True,
-                        placeholder="Select User Type",
+                        placeholder="Выберите тип пользователя",
                     ),
                 ], className="filter-column"),
 
                 # Filter 2: Category Name
                 html.Div([
-                    html.Label("Category"),
+                    html.Label("Категория"),
                     dcc.Dropdown(
                         id="category-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
                                  conn.execute("SELECT DISTINCT category_name FROM orders").fetchall()] if "category_name" in df.columns and len(df) > 0 else [],
                         multi=True,
-                        placeholder="Select Category",
+                        placeholder="Выберите категорию",
                     ),
                 ], className="filter-column"),
 
                 # Filter 3: Ship Date Range
                 html.Div([
-                    html.Label("Ship Date Range"),
+                    html.Label("Диапазон дат доставки"),
                     dcc.DatePickerRange(
                         id="date-range",
                         min_date_allowed=conn.execute("SELECT MIN(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
                         max_date_allowed=conn.execute("SELECT MAX(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
                         start_date=conn.execute("SELECT MIN(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
                         end_date=conn.execute("SELECT MAX(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
-                        display_format="MMM DD, YYYY",
+                        display_format="YYYY-MM-DD",  # Changed format to YYYY-MM-DD
+                        first_day_of_week=1,  # Monday as first day of week (Russian standard)
                     ),
                 ], className="filter-column"),
 
                 # Filter 4: Price Range
                 html.Div([
-                    html.Label("Price Range"),
-                    dcc.RangeSlider(
-                        id="price-slider",
-                        min=min_price,
-                        max=max_price,
-                        value=[min_price, max_price],
-                        marks={},  # We'll update this dynamically
-                        tooltip={"placement": "bottom", "always_visible": True},
-                        step=1,
-                    ),
+                    html.Label("Диапазон цен"),
+                    html.Div([
+                        dcc.RangeSlider(
+                            id="price-slider",
+                            min=min_price,
+                            max=max_price,
+                            value=[min_price, max_price],
+                            marks={},  # We'll update this dynamically
+                            tooltip={"placement": "bottom", "always_visible": True},
+                            step=1,
+                        ),
+                        # Add a div to display current range values
+                        html.Div(id="price-display", style={
+                            "margin-top": "10px",
+                            "display": "flex",
+                            "justify-content": "space-between",
+                            "font-weight": "500",
+                            "color": "#5c6ac4",
+                        }),
+                    ]),
                 ], className="filter-column"),
 
                 # Filter 5: Payment Type
                 html.Div([
-                    html.Label("Payment Method"),
+                    html.Label("Способ оплаты"),
                     dcc.Dropdown(
                         id="payment-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
                                  conn.execute("SELECT DISTINCT type_of_payment FROM orders").fetchall()] if "type_of_payment" in df.columns and len(df) > 0 else [],
                         multi=True,
-                        placeholder="Select Payment Type",
+                        placeholder="Выберите способ оплаты",
                     ),
                 ], className="filter-column"),
 
                 # Filter 6: Map Type
                 html.Div([
-                    html.Label("Map Display"),
+                    html.Label("Тип отображения карты"),
                     dcc.Dropdown(
                         id="map-type-dropdown",
                         options=[
-                            {"label": "Points", "value": "points"},
-                            {"label": "Heat Map", "value": "heatmap"},
-                            {"label": "Clusters", "value": "clusters"},
+                            {"label": "Точки", "value": "points"},
+                            {"label": "Тепловая карта", "value": "heatmap"},
+                            {"label": "Кластеры", "value": "clusters"},
                         ],
                         value="points",
                         clearable=False,
@@ -242,11 +253,11 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
     if map_type == "points":
         # Add individual circle markers
         for idx, row in filtered_df.iterrows():
-            popup_text = f"<strong>User Type:</strong> {row.get('type_user', 'N/A')}<br>" \
-                         f"<strong>Category:</strong> {row.get('category_name', 'N/A')}<br>" \
-                         f"<strong>Ship Date:</strong> {row.get('ship_date', 'N/A')}<br>" \
-                         f"<strong>Price:</strong> ${row.get('price_of_order', 'N/A')}<br>" \
-                         f"<strong>Payment:</strong> {row.get('type_of_payment', 'N/A')}"
+            popup_text = f"<strong>Тип пользователя:</strong> {row.get('type_user', 'Н/Д')}<br>" \
+                         f"<strong>Категория:</strong> {row.get('category_name', 'Н/Д')}<br>" \
+                         f"<strong>Дата доставки:</strong> {row.get('ship_date', 'Н/Д')}<br>" \
+                         f"<strong>Стоимость:</strong> ₽{row.get('price_of_order', 'Н/Д')}<br>" \
+                         f"<strong>Способ оплаты:</strong> {row.get('type_of_payment', 'Н/Д')}"
 
             folium.CircleMarker(
                 location=[row["latitude"], row["longitude"]],
@@ -267,11 +278,11 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
         marker_cluster = MarkerCluster().add_to(m)
 
         for idx, row in filtered_df.iterrows():
-            popup_text = f"<strong>User Type:</strong> {row.get('type_user', 'N/A')}<br>" \
-                         f"<strong>Category:</strong> {row.get('category_name', 'N/A')}<br>" \
-                         f"<strong>Ship Date:</strong> {row.get('ship_date', 'N/A')}<br>" \
-                         f"<strong>Price:</strong> ${row.get('price_of_order', 'N/A')}<br>" \
-                         f"<strong>Payment:</strong> {row.get('type_of_payment', 'N/A')}"
+            popup_text = f"<strong>Тип пользователя:</strong> {row.get('type_user', 'Н/Д')}<br>" \
+                         f"<strong>Категория:</strong> {row.get('category_name', 'Н/Д')}<br>" \
+                         f"<strong>Дата доставки:</strong> {row.get('ship_date', 'Н/Д')}<br>" \
+                         f"<strong>Стоимость:</strong> ₽{row.get('price_of_order', 'Н/Д')}<br>" \
+                         f"<strong>Способ оплаты:</strong> {row.get('type_of_payment', 'Н/Д')}"
 
             folium.CircleMarker(
                 location=[row["latitude"], row["longitude"]],
@@ -285,19 +296,19 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
     # Return the HTML representation of the map
     return m._repr_html_()
 
-# Callback to update the price slider marks and shown values
+# Callback to update the price display with current range values
 @app.callback(
-    Output("price-slider", "marks"),
+    Output("price-display", "children"),
     [Input("price-slider", "value")],
 )
-def update_price_slider_marks(value):
+def update_price_display(value):
     if value is None:
         value = [min_price, max_price]
 
-    return {
-        int(value[0]): {"label": f"${int(value[0])}", "style": {"color": "#5c6ac4", "font-weight": "500"}},
-        int(value[1]): {"label": f"${int(value[1])}", "style": {"color": "#5c6ac4", "font-weight": "500"}},
-    }
+    return [
+        html.Span(f"От: ₽{int(value[0])}"),
+        html.Span(f"До: ₽{int(value[1])}"),
+    ]
 
 if __name__ == "__main__":
     app.run(debug=True)
