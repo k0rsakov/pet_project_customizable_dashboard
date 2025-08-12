@@ -12,3 +12,10 @@ pip install poetry && \
 poetry lock && \
 poetry install
 ```
+
+### Добавление новых зависимостей в окружение
+
+```bash
+poetry lock && \
+poetry install
+```
