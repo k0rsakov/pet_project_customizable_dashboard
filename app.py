@@ -1,35 +1,51 @@
 from datetime import datetime
 
 import dash
+import duckdb
 import folium
 import pandas as pd
 from dash import Input, Output, dcc, html
 from folium.plugins import HeatMap, MarkerCluster
 
 
-# Function to load data - can be replaced with other data sources later
+# Function to load data from DuckDB
 def load_data():
-    # This function can be replaced with different data sources (duckdb, postgresql, etc.)
-    # For now, it loads data from a CSV file
     try:
-        df = pd.read_csv("data.csv")
-        return df
+        # Initialize DuckDB connection
+        conn = duckdb.connect(database=":memory:", read_only=False)
+
+        # Read CSV file into DuckDB
+        conn.execute("CREATE TABLE IF NOT EXISTS orders AS SELECT * FROM read_csv_auto('data.csv')")
+
+        # Convert ship_date to date type
+        conn.execute("ALTER TABLE orders ALTER COLUMN ship_date TYPE DATE")
+
+        # Get data into pandas DataFrame for initial setup
+        df = conn.execute("SELECT * FROM orders").fetchdf()
+
+        return conn, df
     except Exception as e:
         print(f"Error loading data: {e}")
-        # Return an empty DataFrame with expected columns if file doesn't exist
-        return pd.DataFrame(columns=["type_user", "category_name", "ship_date",
-                                     "price_of_order", "type_of_payment",
-                                     "latitude", "longitude"])
+        # Return an empty connection and DataFrame with expected columns if file doesn't exist
+        conn = duckdb.connect(database=":memory:", read_only=False)
+        df = pd.DataFrame(columns=["type_user", "category_name", "ship_date",
+                                   "price_of_order", "type_of_payment",
+                                   "latitude", "longitude"])
+        return conn, df
 
 # Initialize the app
 app = dash.Dash(__name__, external_stylesheets=["https://codepen.io/chriddyp/pen/bWLwgP.css"])
 
 # Load the data
-df = load_data()
+conn, df = load_data()
 
-# Convert ship_date to datetime if it exists in the dataframe
-if "ship_date" in df.columns and len(df) > 0:
-    df["ship_date"] = pd.to_datetime(df["ship_date"])
+# Get min and max values for price slider
+if "price_of_order" in df.columns and len(df) > 0:
+    min_price = float(conn.execute("SELECT MIN(price_of_order) FROM orders").fetchone()[0])
+    max_price = float(conn.execute("SELECT MAX(price_of_order) FROM orders").fetchone()[0])
+else:
+    min_price = 0
+    max_price = 1000
 
 # Initialize the app layout
 app.layout = html.Div([
@@ -42,7 +58,8 @@ app.layout = html.Div([
             html.Label("Type User"),
             dcc.Dropdown(
                 id="type-user-dropdown",
-                options=[{"label": user, "value": user} for user in df["type_user"].unique()] if "type_user" in df.columns and len(df) > 0 else [],
+                options=[{"label": row[0], "value": row[0]} for row in
+                         conn.execute("SELECT DISTINCT type_user FROM orders").fetchall()] if "type_user" in df.columns and len(df) > 0 else [],
                 multi=True,
                 placeholder="Select User Type",
             ),
@@ -53,7 +70,8 @@ app.layout = html.Div([
             html.Label("Category Name"),
             dcc.Dropdown(
                 id="category-dropdown",
-                options=[{"label": cat, "value": cat} for cat in df["category_name"].unique()] if "category_name" in df.columns and len(df) > 0 else [],
+                options=[{"label": row[0], "value": row[0]} for row in
+                         conn.execute("SELECT DISTINCT category_name FROM orders").fetchall()] if "category_name" in df.columns and len(df) > 0 else [],
                 multi=True,
                 placeholder="Select Category",
             ),
@@ -64,10 +82,10 @@ app.layout = html.Div([
             html.Label("Ship Date Range"),
             dcc.DatePickerRange(
                 id="date-range",
-                min_date_allowed=df["ship_date"].min() if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
-                max_date_allowed=df["ship_date"].max() if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
-                start_date=df["ship_date"].min() if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
-                end_date=df["ship_date"].max() if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
+                min_date_allowed=conn.execute("SELECT MIN(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
+                max_date_allowed=conn.execute("SELECT MAX(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
+                start_date=conn.execute("SELECT MIN(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
+                end_date=conn.execute("SELECT MAX(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
             ),
         ], className="two columns"),
 
@@ -76,16 +94,12 @@ app.layout = html.Div([
             html.Label("Price Range"),
             dcc.RangeSlider(
                 id="price-slider",
-                min=df["price_of_order"].min() if "price_of_order" in df.columns and len(df) > 0 else 0,
-                max=df["price_of_order"].max() if "price_of_order" in df.columns and len(df) > 0 else 1000,
-                value=[
-                    df["price_of_order"].min() if "price_of_order" in df.columns and len(df) > 0 else 0,
-                    df["price_of_order"].max() if "price_of_order" in df.columns and len(df) > 0 else 1000,
-                ],
-                marks={
-                    int(df["price_of_order"].min()) if "price_of_order" in df.columns and len(df) > 0 else 0: {"label": "Min"},
-                    int(df["price_of_order"].max()) if "price_of_order" in df.columns and len(df) > 0 else 1000: {"label": "Max"},
-                },
+                min=min_price,
+                max=max_price,
+                value=[min_price, max_price],
+                marks={},  # We'll update this dynamically
+                tooltip={"placement": "bottom", "always_visible": True},
+                step=1,
             ),
         ], className="two columns"),
 
@@ -94,7 +108,8 @@ app.layout = html.Div([
             html.Label("Payment Type"),
             dcc.Dropdown(
                 id="payment-dropdown",
-                options=[{"label": pay, "value": pay} for pay in df["type_of_payment"].unique()] if "type_of_payment" in df.columns and len(df) > 0 else [],
+                options=[{"label": row[0], "value": row[0]} for row in
+                         conn.execute("SELECT DISTINCT type_of_payment FROM orders").fetchall()] if "type_of_payment" in df.columns and len(df) > 0 else [],
                 multi=True,
                 placeholder="Select Payment Type",
             ),
@@ -139,41 +154,76 @@ app.layout = html.Div([
     ],
 )
 def update_map(selected_users, selected_categories, start_date, end_date, price_range, selected_payments, map_type):
-    # Filter the data based on selected filters
-    filtered_df = df.copy()
+    # Build SQL query based on selected filters
+    sql_query = "SELECT * FROM orders WHERE 1=1"
+    params = {}
 
-    if selected_users and "type_user" in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df["type_user"].isin(selected_users)]
+    if selected_users and len(selected_users) > 0:
+        placeholders = ", ".join([f"'{user}'" for user in selected_users])
+        sql_query += f" AND type_user IN ({placeholders})"
 
-    if selected_categories and "category_name" in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df["category_name"].isin(selected_categories)]
+    if selected_categories and len(selected_categories) > 0:
+        placeholders = ", ".join([f"'{cat}'" for cat in selected_categories])
+        sql_query += f" AND category_name IN ({placeholders})"
 
-    if start_date and end_date and "ship_date" in filtered_df.columns:
-        filtered_df = filtered_df[(filtered_df["ship_date"] >= start_date) & (filtered_df["ship_date"] <= end_date)]
+    if start_date and end_date:
+        sql_query += f" AND ship_date >= '{start_date}' AND ship_date <= '{end_date}'"
 
-    if price_range and "price_of_order" in filtered_df.columns:
-        filtered_df = filtered_df[(filtered_df["price_of_order"] >= price_range[0]) &
-                                  (filtered_df["price_of_order"] <= price_range[1])]
+    if price_range:
+        sql_query += f" AND price_of_order >= {price_range[0]} AND price_of_order <= {price_range[1]}"
 
-    if selected_payments and "type_of_payment" in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df["type_of_payment"].isin(selected_payments)]
+    if selected_payments and len(selected_payments) > 0:
+        placeholders = ", ".join([f"'{pay}'" for pay in selected_payments])
+        sql_query += f" AND type_of_payment IN ({placeholders})"
+
+    # Execute the query and get the filtered data
+    try:
+        filtered_df = conn.execute(sql_query).fetchdf()
+    except Exception as e:
+        print(f"SQL Error: {e}")
+        filtered_df = pd.DataFrame(columns=["type_user", "category_name", "ship_date",
+                                            "price_of_order", "type_of_payment",
+                                            "latitude", "longitude"])
 
     # Check if we have data with coordinates
     if len(filtered_df) == 0 or "latitude" not in filtered_df.columns or "longitude" not in filtered_df.columns:
         # Return an empty map centered on a default location if no data
-        m = folium.Map(location=[0, 0], zoom_start=2)
+        m = folium.Map(
+            location=[52.260853, 104.282274],
+            zoom_start=12,
+            tiles="CartoDB positron",
+        )
         return m._repr_html_()
 
-    # Calculate map center
-    center_lat = filtered_df["latitude"].mean()
-    center_lon = filtered_df["longitude"].mean()
+    # Calculate map center and bounds for proper zoom
+    if len(filtered_df) > 0:
+        center_lat = filtered_df["latitude"].mean()
+        center_lon = filtered_df["longitude"].mean()
+
+        # Calculate bounds for auto-zoom
+        sw = [filtered_df["latitude"].min(), filtered_df["longitude"].min()]
+        ne = [filtered_df["latitude"].max(), filtered_df["longitude"].max()]
+    else:
+        # Default center if no filtered data
+        center_lat = 52.260853
+        center_lon = 104.282274
+        sw = None
+        ne = None
 
     # Create a base map
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=5)
+    m = folium.Map(
+        location=[center_lat, center_lon],
+        zoom_start=12,
+        tiles="CartoDB positron",
+    )
+
+    # Fit map to bounds if we have data
+    if sw and ne:
+        m.fit_bounds([sw, ne])
 
     # Add markers based on selected map type
     if map_type == "points":
-        # Add individual markers
+        # Add individual circle markers
         for idx, row in filtered_df.iterrows():
             popup_text = f"User Type: {row.get('type_user', 'N/A')}<br>" \
                          f"Category: {row.get('category_name', 'N/A')}<br>" \
@@ -181,8 +231,12 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
                          f"Price: {row.get('price_of_order', 'N/A')}<br>" \
                          f"Payment: {row.get('type_of_payment', 'N/A')}"
 
-            folium.Marker(
+            folium.CircleMarker(
                 location=[row["latitude"], row["longitude"]],
+                radius=1.5,  # Smaller size for better visibility with many points
+                color="red",
+                fill=True,
+                fill_opacity=0.7,
                 popup=folium.Popup(popup_text, max_width=300),
             ).add_to(m)
 
@@ -202,13 +256,31 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
                          f"Price: {row.get('price_of_order', 'N/A')}<br>" \
                          f"Payment: {row.get('type_of_payment', 'N/A')}"
 
-            folium.Marker(
+            folium.CircleMarker(
                 location=[row["latitude"], row["longitude"]],
+                radius=1.5,  # Smaller size for better visibility with many points
+                color="blue",
+                fill=True,
+                fill_opacity=0.7,
                 popup=folium.Popup(popup_text, max_width=300),
             ).add_to(marker_cluster)
 
     # Return the HTML representation of the map
     return m._repr_html_()
 
+# Callback to update the price slider marks and shown values
+@app.callback(
+    Output("price-slider", "marks"),
+    [Input("price-slider", "value")],
+)
+def update_price_slider_marks(value):
+    if value is None:
+        value = [min_price, max_price]
+
+    return {
+        int(value[0]): {"label": f"₽{int(value[0])}", "style": {"color": "#77b0b1"}},
+        int(value[1]): {"label": f"₽{int(value[1])}", "style": {"color": "#77b0b1"}},
+    }
+
 if __name__ == "__main__":
-    app.run(debug=True)  # Changed from app.run_server() to app.run()
+    app.run(debug=True)
