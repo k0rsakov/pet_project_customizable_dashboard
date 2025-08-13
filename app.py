@@ -7,12 +7,44 @@ import folium
 import pandas as pd
 from dash import Input, Output, dcc, html
 from folium.plugins import HeatMap, MarkerCluster
-
+import time
+import functools
+import logging
+from dash import html
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
+
+
+
+
+def timing_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+
+        # Логируем время выполнения
+        logging.info(f"Функция {func.__name__} выполнена за {execution_time:.4f} секунд")
+
+        # Добавляем информацию о времени в результат HTML
+        if isinstance(result, str) and "</body>" in result:
+            timing_info = f"""
+            <div style="position:fixed; bottom:10px; right:10px; 
+                        background-color:rgba(0,0,0,0.7); color:white; 
+                        padding:5px 10px; border-radius:5px; z-index:1000;">
+                Время построения: {execution_time:.4f} сек
+            </div>
+            """
+            result = result.replace("</body>", f"{timing_info}</body>")
+
+        return result
+
+    return wrapper
 
 # Function to load data from DuckDB
 def load_data():
@@ -149,6 +181,7 @@ app.layout = html.Div([
         Input("map-type-dropdown", "value"),
     ],
 )
+@timing_decorator
 def update_map(selected_users, selected_categories, start_date, end_date, selected_payments, map_type):
     # Build SQL query based on selected filters
     sql_query = "SELECT * FROM orders WHERE 1=1"

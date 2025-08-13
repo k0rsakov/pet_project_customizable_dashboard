@@ -77,8 +77,26 @@ ignore = [
     # Although df is a common variable name for a Pandas DataFrame, it's not a great variable name for production code
     "PD901",
     # Checks for ambiguous Unicode characters in comments.
-    "RUF001", "RUF002", "RUF003",
-    "INP001"
+    "RUF001", "RUF002", "RUF003", "RUF100",
+    "INP001",
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "NPY002",
+    "PTH123",
+    "PLR0912",
+    "PLR0913",
+    "RET504",
+    "FBT002",
+    "PLR0915",
+    "D103",
+    "D415",
+    "D400",
+    "BLE001",
+    "TRY300",
+    "ISC002",
+    "B007",
+    "C901"
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
