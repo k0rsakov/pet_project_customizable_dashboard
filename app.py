@@ -43,25 +43,16 @@ app = dash.Dash(
 )
 
 # Set the page title
-app.title = "Интерактивная Карта Дашборда"
+app.title = "Интерактивная Карта"
 
 # Load the data
 conn, df = load_data()
-
-# Get min and max values for price slider
-if "price_of_order" in df.columns and len(df) > 0:
-    min_price = int(conn.execute("SELECT MIN(price_of_order) FROM orders").fetchone()[0])
-    max_price = int(conn.execute("SELECT MAX(price_of_order) FROM orders").fetchone()[0])
-else:
-    min_price = 0
-    max_price = 1000
 
 # Initialize the app layout with modern styling
 app.layout = html.Div([
     # Main container
     html.Div([
-        # Header
-        html.H1("Интерактивная Карта Дашборда", style={"textAlign": "center"}),
+        # Заголовок удален
 
         # Filters card
         html.Div([
@@ -69,7 +60,6 @@ app.layout = html.Div([
             html.Div([
                 # Filter 1: Type User
                 html.Div([
-                    # Label removed
                     dcc.Dropdown(
                         id="type-user-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
@@ -81,7 +71,6 @@ app.layout = html.Div([
 
                 # Filter 2: Category Name
                 html.Div([
-                    # Label removed
                     dcc.Dropdown(
                         id="category-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
@@ -93,75 +82,23 @@ app.layout = html.Div([
 
                 # Filter 3: Ship Date Range
                 html.Div([
-                    # Add a small header for the date range
-                    html.Div("Диапазон дат доставки", style={
-                        "font-weight": "500",
-                        "margin-bottom": "8px",
-                        "font-size": "0.9rem",
-                        "color": "var(--primary-dark)",
-                    }),
-                    # DatePickerRange with proper placeholder properties
                     dcc.DatePickerRange(
                         id="date-range",
                         min_date_allowed=conn.execute("SELECT MIN(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
                         max_date_allowed=conn.execute("SELECT MAX(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
                         start_date=conn.execute("SELECT MIN(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2020, 1, 1),
                         end_date=conn.execute("SELECT MAX(ship_date) FROM orders").fetchone()[0] if "ship_date" in df.columns and len(df) > 0 else datetime(2025, 12, 31),
-                        display_format="YYYY-MM-DD",  # Changed format to YYYY-MM-DD
-                        first_day_of_week=1,  # Monday as first day of week (Russian standard)
+                        display_format="YYYY-MM-DD",
+                        first_day_of_week=1,
                         start_date_placeholder_text="Начальная дата",
                         end_date_placeholder_text="Конечная дата",
                     ),
                 ], className="filter-column"),
 
-                # Filter 4: Price Range - Complete redesign with explicit display
-                html.Div([
-                    # Header
-                    html.Div("Диапазон цен", style={
-                        "font-weight": "500",
-                        "margin-bottom": "12px",
-                        "font-size": "0.9rem",
-                        "color": "var(--primary-dark)",
-                    }),
-
-                    # Current price display
-                    html.Div([
-                        html.Div(f"От: ₽{min_price}", id="price-min-display", style={
-                            "font-weight": "500",
-                            "font-size": "0.9rem",
-                            "color": "#5c6ac4",
-                            "margin-bottom": "5px",
-                        }),
-                        html.Div(f"До: ₽{max_price}", id="price-max-display", style={
-                            "font-weight": "500",
-                            "font-size": "0.9rem",
-                            "color": "#5c6ac4",
-                            "margin-bottom": "5px",
-                        }),
-                    ], style={"display": "flex", "justify-content": "space-between"}),
-
-                    # Price slider with visible styling
-                    html.Div(
-                        dcc.RangeSlider(
-                            id="price-slider",
-                            min=min_price,
-                            max=max_price,
-                            value=[min_price, max_price],
-                            step=1,
-                            allowCross=False,
-                            tooltip={"placement": "bottom", "always_visible": True},
-                            marks=None,  # No fixed marks, using dynamic display instead
-                        ),
-                        style={
-                            "padding": "10px 0",
-                            "margin-top": "5px",
-                        },
-                    ),
-                ], className="filter-column"),
+                # Слайдер цены удален
 
                 # Filter 5: Payment Type
                 html.Div([
-                    # Label removed
                     dcc.Dropdown(
                         id="payment-dropdown",
                         options=[{"label": row[0], "value": row[0]} for row in
@@ -173,7 +110,6 @@ app.layout = html.Div([
 
                 # Filter 6: Map Type
                 html.Div([
-                    # Label removed
                     dcc.Dropdown(
                         id="map-type-dropdown",
                         options=[
@@ -191,7 +127,7 @@ app.layout = html.Div([
 
         # Map container with increased height
         html.Div([
-            html.Iframe(id="map", srcDoc="", width="100%", height="720px", className="map-frame"),
+            html.Iframe(id="map", srcDoc="", width="100%", height="800px", className="map-frame"),
         ], className="map-container"),
 
         # Hidden div for storing filtered data info
@@ -207,12 +143,11 @@ app.layout = html.Div([
         Input("category-dropdown", "value"),
         Input("date-range", "start_date"),
         Input("date-range", "end_date"),
-        Input("price-slider", "value"),
         Input("payment-dropdown", "value"),
         Input("map-type-dropdown", "value"),
     ],
 )
-def update_map(selected_users, selected_categories, start_date, end_date, price_range, selected_payments, map_type):
+def update_map(selected_users, selected_categories, start_date, end_date, selected_payments, map_type):
     # Build SQL query based on selected filters
     sql_query = "SELECT * FROM orders WHERE 1=1"
 
@@ -226,9 +161,6 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
 
     if start_date and end_date:
         sql_query += f" AND ship_date >= '{start_date}' AND ship_date <= '{end_date}'"
-
-    if price_range:
-        sql_query += f" AND price_of_order >= {price_range[0]} AND price_of_order <= {price_range[1]}"
 
     if selected_payments and len(selected_payments) > 0:
         placeholders = ", ".join([f"'{pay}'" for pay in selected_payments])
@@ -325,26 +257,6 @@ def update_map(selected_users, selected_categories, start_date, end_date, price_
 
     # Return the HTML representation of the map
     return m._repr_html_()
-
-# Callback to update min price display
-@app.callback(
-    Output("price-min-display", "children"),
-    [Input("price-slider", "value")],
-)
-def update_price_min_display(value):
-    if not value:
-        return f"От: ₽{min_price}"
-    return f"От: ₽{int(value[0])}"
-
-# Callback to update max price display
-@app.callback(
-    Output("price-max-display", "children"),
-    [Input("price-slider", "value")],
-)
-def update_price_max_display(value):
-    if not value:
-        return f"До: ₽{max_price}"
-    return f"До: ₽{int(value[1])}"
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -9,7 +9,7 @@
   --card-bg: #ffffff;
   --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   --border-radius: 8px;
-  --filter-height: 70px; /* Reduced height since we removed labels */
+  --filter-height: 70px;
 }
 
 body {
@@ -23,18 +23,9 @@ body {
 
 /* Main container */
 .container {
-  max-width: 95%;
+  max-width: 98%;
   margin: 0 auto;
-  padding: 20px;
-}
-
-/* Header styles */
-h1 {
-  font-size: 2.2rem;
-  color: var(--primary-dark);
-  margin-bottom: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  padding: 15px; /* Уменьшенный отступ сверху из-за удаления заголовка */
 }
 
 /* Card styles for filter section */
@@ -56,14 +47,14 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   margin: 0 -10px;
-  align-items: center; /* Changed to center alignment for better look without labels */
+  align-items: center;
   min-height: var(--filter-height);
 }
 
 .filter-column {
   flex: 1;
-  min-width: 180px;
-  padding: 0 10px;
+  min-width: 200px; /* Увеличенная ширина колонки */
+  padding: 0 15px; /* Увеличенный отступ для лучшего расположения */
   margin-bottom: 15px;
 }
 
@@ -73,12 +64,12 @@ h1 {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   padding: 15px;
-  height: 750px;  /* Increased height */
+  height: 830px;
 }
 
 .map-frame {
   width: 100%;
-  height: 720px;  /* Increased height */
+  height: 800px;
   border: none;
   border-radius: calc(var(--border-radius) - 4px);
 }
@@ -108,7 +99,7 @@ h1 {
 /* DatePicker styling */
 .DateInput {
   border-radius: var(--border-radius) !important;
-  width: 110px !important; /* Increased width for date inputs */
+  width: 130px !important; /* Увеличенная ширина для полей даты */
 }
 
 .DateInput_input {
@@ -131,7 +122,8 @@ h1 {
   display: flex !important;
   align-items: center !important;
   padding: 2px !important;
-  height: 38px !important; /* Consistent height */
+  height: 38px !important;
+  width: 100% !important;
 }
 
 .DateRangePickerInput_arrow {
@@ -183,70 +175,6 @@ h1 {
 
 .DayPickerNavigation_button:hover {
   border: 1px solid var(--primary-color) !important;
-}
-
-/* RangeSlider styling - MAJOR enhancement */
-.rc-slider {
-  height: 20px !important; /* Increased height for better visibility */
-  padding: 10px 0 !important;
-}
-
-.rc-slider-rail {
-  height: 6px !important; /* Thicker rail */
-  background-color: #e9ecef !important;
-  border-radius: 6px !important;
-}
-
-.rc-slider-track {
-  height: 6px !important; /* Thicker track */
-  background-color: var(--primary-color) !important;
-  border-radius: 6px !important;
-}
-
-.rc-slider-handle {
-  border: solid 2px var(--primary-color) !important;
-  background-color: white !important;
-  width: 18px !important; /* Larger handle */
-  height: 18px !important;
-  margin-top: -6px !important; /* Adjust for center alignment */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important; /* Add shadow to handle for visibility */
-}
-
-.rc-slider-handle:focus {
-  box-shadow: 0 0 0 3px var(--primary-light) !important;
-  border-color: var(--primary-color) !important;
-}
-
-.rc-slider-handle:hover {
-  border-color: var(--primary-dark) !important;
-  box-shadow: 0 0 0 3px rgba(92, 106, 196, 0.3) !important;
-}
-
-.rc-slider-handle-active:active {
-  border-color: var(--primary-dark) !important;
-  box-shadow: 0 0 0 5px rgba(92, 106, 196, 0.3) !important;
-}
-
-/* Tooltip styling enhanced */
-.rc-slider-tooltip {
-  opacity: 1 !important;
-  z-index: 9999 !important;
-}
-
-.rc-slider-tooltip-inner {
-  background-color: var(--primary-dark) !important;
-  color: white !important;
-  font-size: 14px !important;
-  height: auto !important;
-  line-height: 1.2 !important;
-  min-width: 40px !important;
-  padding: 5px 8px !important;
-  font-weight: 500 !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
-}
-
-.rc-slider-tooltip-arrow {
-  border-top-color: var(--primary-dark) !important;
 }
 
 /* Responsive adjustments */
