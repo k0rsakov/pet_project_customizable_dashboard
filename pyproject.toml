@@ -96,7 +96,11 @@ ignore = [
     "TRY300",
     "ISC002",
     "B007",
-    "C901"
+    "C901",
+    "C408",
+    "PD011",
+    "E501",
+    "DTZ001"
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
