@@ -1,50 +1,20 @@
 import logging
+import time
 from datetime import datetime
 
 import dash
 import duckdb
 import folium
 import pandas as pd
+import plotly.express as px
 from dash import Input, Output, dcc, html
-from folium.plugins import HeatMap, MarkerCluster
-import time
-import functools
-import logging
-from dash import html
+from folium.plugins import FastMarkerCluster
+
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
-
-
-
-
-def timing_decorator(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        execution_time = end_time - start_time
-
-        # Логируем время выполнения
-        logging.info(f"Функция {func.__name__} выполнена за {execution_time:.4f} секунд")
-
-        # Добавляем информацию о времени в результат HTML
-        if isinstance(result, str) and "</body>" in result:
-            timing_info = f"""
-            <div style="position:fixed; bottom:10px; right:10px; 
-                        background-color:rgba(0,0,0,0.7); color:white; 
-                        padding:5px 10px; border-radius:5px; z-index:1000;">
-                Время построения: {execution_time:.4f} сек
-            </div>
-            """
-            result = result.replace("</body>", f"{timing_info}</body>")
-
-        return result
-
-    return wrapper
 
 # Function to load data from DuckDB
 def load_data():
@@ -68,6 +38,7 @@ def load_data():
                                    "price_of_order", "type_of_payment",
                                    "latitude", "longitude"])
         return conn, df
+
 
 # Initialize the app
 app = dash.Dash(
@@ -158,9 +129,9 @@ app.layout = html.Div([
             ], className="filter-row"),
         ], className="filter-card"),
 
-        # Map container with increased height
+        # Map container - Использует и iframe и dcc.Graph в зависимости от типа карты
         html.Div([
-            html.Iframe(id="map", srcDoc="", width="100%", height="800px", className="map-frame"),
+            html.Div(id="map-container", style={"height": "800px", "width": "100%"}),
         ], className="map-container"),
 
         # Hidden div for storing filtered data info
@@ -171,7 +142,7 @@ app.layout = html.Div([
 
 # Callback to update the map based on filters
 @app.callback(
-    Output("map", "srcDoc"),
+    Output("map-container", "children"),
     [
         Input("type-user-dropdown", "value"),
         Input("category-dropdown", "value"),
@@ -181,8 +152,9 @@ app.layout = html.Div([
         Input("map-type-dropdown", "value"),
     ],
 )
-@timing_decorator
 def update_map(selected_users, selected_categories, start_date, end_date, selected_payments, map_type):
+    start_time = time.time()
+
     # Build SQL query based on selected filters
     sql_query = "SELECT * FROM orders WHERE 1=1"
 
@@ -210,88 +182,160 @@ def update_map(selected_users, selected_categories, start_date, end_date, select
                                             "price_of_order", "type_of_payment",
                                             "latitude", "longitude"])
 
+    # Log the number of records returned
+    logging.info(f"Query returned {len(filtered_df)} records")
+
     # Check if we have data with coordinates
     if len(filtered_df) == 0 or "latitude" not in filtered_df.columns or "longitude" not in filtered_df.columns:
         # Return an empty map centered on a default location if no data
-        m = folium.Map(
-            location=[52.260853, 104.282274],
-            zoom_start=12,
-            tiles="CartoDB positron",
+        empty_fig = px.scatter_mapbox(
+            lat=[52.260853], lon=[104.282274],
+            zoom=12, height=800,
         )
-        return m._repr_html_()
+        empty_fig.update_layout(
+            mapbox_style="carto-positron",
+            margin={"r": 0, "t": 0, "l": 0, "b": 0},
+            height=800,
+            dragmode="pan",
+        )
+        execution_time = time.time() - start_time
+        logging.info(f"Построение пустой карты заняло {execution_time:.4f} секунд")
+        return dcc.Graph(
+            figure=empty_fig,
+            style={"height": "800px"},
+            config={"scrollZoom": True, "doubleClick": "reset"},
+        )
 
-    # Calculate map center and bounds for proper zoom
-    if len(filtered_df) > 0:
+    # Для кластеров используем folium
+    if map_type == "clusters":
+        # Создаем карту folium
         center_lat = filtered_df["latitude"].mean()
         center_lon = filtered_df["longitude"].mean()
 
-        # Calculate bounds for auto-zoom
-        sw = [filtered_df["latitude"].min(), filtered_df["longitude"].min()]
-        ne = [filtered_df["latitude"].max(), filtered_df["longitude"].max()]
-    else:
-        # Default center if no filtered data
-        center_lat = 52.260853
-        center_lon = 104.282274
-        sw = None
-        ne = None
+        m = folium.Map(
+            location=[center_lat, center_lon],
+            zoom_start=12,
+            tiles="CartoDB positron",
+        )
 
-    # Create a base map
-    m = folium.Map(
-        location=[center_lat, center_lon],
-        zoom_start=12,
-        tiles="CartoDB positron",
-    )
+        # Используем FastMarkerCluster для быстрой кластеризации
+        # Создаем callback-функцию для JavaScript
+        callback = """
+        function (row) {
+            var lat = row[0];
+            var lng = row[1];
+            var type = row[2];
+            var color = '#3f51b5'; // По умолчанию
 
-    # Fit map to bounds if we have data
-    if sw and ne:
-        m.fit_bounds([sw, ne])
+            if (type === 'ФЛ') color = '#3f51b5';
+            else if (type === 'ЮЛ') color = '#ff7043';
+            else if (type === 'ИП') color = '#2e7d32';
 
-    # Add markers based on selected map type
+            var marker = L.circleMarker(new L.LatLng(lat, lng), {
+                radius: 4,
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.7
+            });
+            return marker;
+        };
+        """
+
+        # Подготовка данных для кластеризации без сэмплирования
+        cluster_data = filtered_df[["latitude", "longitude", "type_user"]].values.tolist()
+
+        FastMarkerCluster(data=cluster_data, callback=callback).add_to(m)
+
+        # Конвертируем карту в HTML и отображаем в iframe
+        html_string = m._repr_html_()
+        execution_time = time.time() - start_time
+        logging.info(f"Построение карты кластеров заняло {execution_time:.4f} секунд")
+
+        return html.Iframe(srcDoc=html_string, style={"width": "100%", "height": "800px", "border": "none"})
+
+    # Для остальных типов карт используем Plotly
+    # Format price for hover data
+    if "price_of_order" in filtered_df.columns:
+        filtered_df["price_formatted"] = filtered_df["price_of_order"].apply(lambda x: f"₽{x:,}".replace(",", " "))
+
+    # Create the map based on the map type
+    hover_data = {
+        "type_user": True,
+        "category_name": True,
+        "ship_date": True,
+        "price_formatted": True,
+        "price_of_order": False,  # Скрываем исходную цену
+        "type_of_payment": True,
+        "latitude": False,
+        "longitude": False,
+    }
+
     if map_type == "points":
-        # Add individual circle markers
-        for idx, row in filtered_df.iterrows():
-            popup_text = f"<strong>Тип пользователя:</strong> {row.get('type_user', 'Н/Д')}<br>" \
-                         f"<strong>Категория:</strong> {row.get('category_name', 'Н/Д')}<br>" \
-                         f"<strong>Дата доставки:</strong> {row.get('ship_date', 'Н/Д')}<br>" \
-                         f"<strong>Стоимость:</strong> ₽{row.get('price_of_order', 'Н/Д')}<br>" \
-                         f"<strong>Способ оплаты:</strong> {row.get('type_of_payment', 'Н/Д')}"# noqa: ISC002
-
-            folium.CircleMarker(
-                location=[row["latitude"], row["longitude"]],
-                radius=1.5,  # Smaller size for better visibility with many points
-                color="#5c6ac4",  # Using our primary color variable
-                fill=True,
-                fill_opacity=0.7,
-                popup=folium.Popup(popup_text, max_width=300),
-            ).add_to(m)
+        fig = px.scatter_mapbox(
+            filtered_df,
+            lat="latitude",
+            lon="longitude",
+            hover_name="category_name",
+            hover_data=hover_data,
+            color="type_user",
+            color_discrete_map={
+                "ФЛ": "#5c6ac4",  # Синий
+                "ЮЛ": "#ff9800",  # Оранжевый
+                "ИП": "#4caf50",   # Зеленый
+            },
+            opacity=0.7,
+            zoom=11,
+            height=800,
+        )
+        fig.update_traces(marker=dict(size=6))
 
     elif map_type == "heatmap":
-        # Create a heatmap layer
-        heat_data = [[row["latitude"], row["longitude"]] for _, row in filtered_df.iterrows()]
-        HeatMap(heat_data, gradient={0.4: "blue", 0.65: "lime", 1: "red"}, min_opacity=0.5, radius=8).add_to(m)
+        # Для тепловой карты используем px.density_mapbox
+        fig = px.density_mapbox(
+            filtered_df,
+            lat="latitude",
+            lon="longitude",
+            z="price_of_order" if "price_of_order" in filtered_df.columns else None,
+            radius=10,
+            zoom=11,
+            height=800,
+            color_continuous_scale=[
+                [0, "blue"],
+                [0.4, "blue"],
+                [0.65, "lime"],
+                [1.0, "red"],
+            ],
+            opacity=0.8,
+        )
 
-    elif map_type == "clusters":
-        # Create a marker cluster
-        marker_cluster = MarkerCluster().add_to(m)
+    # Общие настройки карты
+    fig.update_layout(
+        mapbox_style="carto-positron",
+        margin={"r": 0, "t": 0, "l": 0, "b": 0},
+        height=800,
+        legend=dict(
+            title="Тип пользователя",
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+        ),
+        dragmode="pan",  # Разрешаем перетаскивание карты
+    )
 
-        for idx, row in filtered_df.iterrows():
-            popup_text = f"<strong>Тип пользователя:</strong> {row.get('type_user', 'Н/Д')}<br>" \
-                         f"<strong>Категория:</strong> {row.get('category_name', 'Н/Д')}<br>" \
-                         f"<strong>Дата доставки:</strong> {row.get('ship_date', 'Н/Д')}<br>" \
-                         f"<strong>Стоимость:</strong> ₽{row.get('price_of_order', 'Н/Д')}<br>" \
-                         f"<strong>Способ оплаты:</strong> {row.get('type_of_payment', 'Н/Д')}"
+    execution_time = time.time() - start_time
+    logging.info(f"Построение карты {map_type} заняло {execution_time:.4f} секунд")
 
-            folium.CircleMarker(
-                location=[row["latitude"], row["longitude"]],
-                radius=1.5,
-                color="#3f51b5",  # Using our primary-dark color variable
-                fill=True,
-                fill_opacity=0.7,
-                popup=folium.Popup(popup_text, max_width=300),
-            ).add_to(marker_cluster)
+    return dcc.Graph(
+        figure=fig,
+        style={"height": "800px"},
+        config={
+            "scrollZoom": True,  # Включаем зум колесом мыши
+            "doubleClick": "reset",  # Двойной клик для сброса вида
+        },
+    )
 
-    # Return the HTML representation of the map
-    return m._repr_html_()
 
 if __name__ == "__main__":
     app.run(debug=True)
