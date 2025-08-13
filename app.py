@@ -52,8 +52,6 @@ conn, df = load_data()
 app.layout = html.Div([
     # Main container
     html.Div([
-        # Заголовок удален
-
         # Filters card
         html.Div([
             # Filters row
@@ -92,10 +90,9 @@ app.layout = html.Div([
                         first_day_of_week=1,
                         start_date_placeholder_text="Начальная дата",
                         end_date_placeholder_text="Конечная дата",
+                        className="date-range-picker"
                     ),
-                ], className="filter-column"),
-
-                # Слайдер цены удален
+                ], className="filter-column date-filter"),
 
                 # Filter 5: Payment Type
                 html.Div([

@@ -47,15 +47,25 @@ body {
   display: flex;
   flex-wrap: wrap;
   margin: 0 -10px;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start for better alignment */
   min-height: var(--filter-height);
+  gap: 10px; /* Added gap for better spacing */
 }
 
 .filter-column {
   flex: 1;
-  min-width: 200px; /* Увеличенная ширина колонки */
-  padding: 0 15px; /* Увеличенный отступ для лучшего расположения */
+  min-width: 180px; /* Reduced minimum width for better responsive layout */
+  padding: 0 8px; /* Reduced padding for better fit */
   margin-bottom: 15px;
+}
+
+/* Special styling for date filter */
+.date-filter {
+  min-width: 280px; /* Date picker needs more width */
+}
+
+.date-range-picker {
+  width: 100%; /* Ensure the date picker takes full width of its container */
 }
 
 /* Map container */
@@ -96,10 +106,14 @@ body {
   box-shadow: 0 0 0 1px var(--primary-light) !important;
 }
 
-/* DatePicker styling */
+/* DatePicker styling - significantly improved */
 .DateInput {
-  border-radius: var(--border-radius) !important;
-  width: 130px !important; /* Увеличенная ширина для полей даты */
+  width: 120px !important; /* Fixed width for date inputs */
+  border-radius: var(--border-radius) 0 0 var(--border-radius) !important;
+}
+
+.DateInput:last-of-type {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0 !important;
 }
 
 .DateInput_input {
@@ -109,6 +123,7 @@ body {
   color: var(--text-color) !important;
   border-radius: var(--border-radius) !important;
   font-family: 'Poppins', 'Roboto', sans-serif !important;
+  height: 24px !important; /* Consistent height with dropdowns */
 }
 
 .DateInput_input__focused {
@@ -122,13 +137,14 @@ body {
   display: flex !important;
   align-items: center !important;
   padding: 2px !important;
-  height: 38px !important;
+  height: 38px !important; /* Same height as dropdowns */
   width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .DateRangePickerInput_arrow {
   color: var(--primary-color) !important;
-  margin: 0 8px !important;
+  margin: 0 4px !important; /* Reduced margin to save space */
 }
 
 /* Calendar styling */
@@ -177,23 +193,51 @@ body {
   border: 1px solid var(--primary-color) !important;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1200px) {
+/* Improved responsive adjustments */
+@media (max-width: 1400px) {
   .filter-column {
-    min-width: 220px;
+    min-width: 160px;
+  }
+
+  .date-filter {
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .filter-row {
+    justify-content: space-between;
+  }
+
+  .filter-column {
+    min-width: 180px;
+    flex: 0 0 calc(33.33% - 20px); /* 3 columns per row */
+  }
+
+  .date-filter {
+    min-width: 240px;
+    flex: 0 0 calc(50% - 20px); /* Date picker takes half row */
   }
 }
 
 @media (max-width: 992px) {
   .filter-column {
-    min-width: 250px;
-    flex-basis: calc(50% - 20px);
+    flex: 0 0 calc(50% - 20px); /* 2 columns per row */
+    min-width: 220px;
+  }
+
+  .date-filter {
+    flex: 0 0 calc(50% - 20px);
   }
 }
 
 @media (max-width: 768px) {
   .filter-column {
-    flex-basis: 100%;
+    flex: 0 0 100%; /* 1 column per row */
+  }
+
+  .date-filter {
+    flex: 0 0 100%;
   }
 
   .map-frame {
