@@ -272,8 +272,7 @@ conn = duckdb.connect("data.duckdb")
 
 conn.sql(
     """
-    DROP TABLE IF EXISTS orders;
-    CREATE TABLE orders (
+    CREATE TABLE IF NOT EXISTS orders (
         latitude DOUBLE,
         longitude DOUBLE,
         type_user VARCHAR,

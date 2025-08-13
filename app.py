@@ -1,5 +1,5 @@
 from datetime import datetime
-
+import logging
 import dash
 import duckdb
 import folium
@@ -12,16 +12,14 @@ from folium.plugins import HeatMap, MarkerCluster
 def load_data():
     try:
         # Initialize DuckDB connection
-        conn = duckdb.connect(database=":memory:", read_only=False)
-
-        # Read CSV file into DuckDB
-        conn.execute("CREATE TABLE IF NOT EXISTS orders AS SELECT * FROM read_csv_auto('data.csv')")
-
-        # Convert ship_date to date type
-        conn.execute("ALTER TABLE orders ALTER COLUMN ship_date TYPE DATE")
+        conn = duckdb.connect(database="data.duckdb", read_only=True)
 
         # Get data into pandas DataFrame for initial setup
-        df = conn.execute("SELECT * FROM orders").fetchdf()
+        df = conn.execute("SELECT * FROM orders").df()
+
+        count_orders = conn.sql("SELECT count(*) FROM orders").fetchone()[0]
+
+        logging.info(f"Loaded {count_orders} orders from the database.")
 
         return conn, df
     except Exception as e:
