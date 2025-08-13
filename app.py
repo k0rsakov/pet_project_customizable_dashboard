@@ -90,7 +90,7 @@ app.layout = html.Div([
                         first_day_of_week=1,
                         start_date_placeholder_text="Начальная дата",
                         end_date_placeholder_text="Конечная дата",
-                        className="date-range-picker"
+                        className="date-range-picker",
                     ),
                 ], className="filter-column date-filter"),
 
