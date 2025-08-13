@@ -1,11 +1,17 @@
-from datetime import datetime
 import logging
+from datetime import datetime
+
 import dash
 import duckdb
 import folium
 import pandas as pd
 from dash import Input, Output, dcc, html
 from folium.plugins import HeatMap, MarkerCluster
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
 
 
 # Function to load data from DuckDB
@@ -112,7 +118,7 @@ app.layout = html.Div([
                             {"label": "Тепловая карта", "value": "heatmap"},
                             {"label": "Кластеры", "value": "clusters"},
                         ],
-                        value="points",
+                        value="clusters",
                         clearable=False,
                         placeholder="Тип отображения карты",
                     ),
@@ -129,6 +135,7 @@ app.layout = html.Div([
         html.Div(id="filtered-data-info", style={"display": "none"}),
     ], className="container"),
 ], style={"backgroundColor": "var(--background-color)"})
+
 
 # Callback to update the map based on filters
 @app.callback(
@@ -214,7 +221,7 @@ def update_map(selected_users, selected_categories, start_date, end_date, select
                          f"<strong>Категория:</strong> {row.get('category_name', 'Н/Д')}<br>" \
                          f"<strong>Дата доставки:</strong> {row.get('ship_date', 'Н/Д')}<br>" \
                          f"<strong>Стоимость:</strong> ₽{row.get('price_of_order', 'Н/Д')}<br>" \
-                         f"<strong>Способ оплаты:</strong> {row.get('type_of_payment', 'Н/Д')}"
+                         f"<strong>Способ оплаты:</strong> {row.get('type_of_payment', 'Н/Д')}"# noqa: ISC002
 
             folium.CircleMarker(
                 location=[row["latitude"], row["longitude"]],
