@@ -206,3 +206,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 /poetry.lock
+
+# Project-specific gitignore
+data.duckdb

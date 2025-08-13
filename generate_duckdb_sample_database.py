@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 
 import duckdb
 import numpy as np
@@ -294,3 +295,14 @@ conn.sql(
 
 
 conn.close()
+
+# Список файлов для удаления
+files_to_delete = ["left.parquet", "right.parquet", "up.parquet"]
+
+# Цикл по файлам и их удаление
+for file in files_to_delete:
+    if os.path.exists(file):  # noqa: PTH110
+        os.remove(file)  # noqa: PTH107
+        print(f"Файл '{file}' успешно удален.")
+    else:
+        print(f"Файл '{file}' не существует.")
