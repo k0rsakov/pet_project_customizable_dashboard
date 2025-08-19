@@ -28,7 +28,8 @@ def calculate_center_of_polygon(polygon):
     centroid = polygon.centroid
     return centroid.y, centroid.x
 
-def generate_points_in_polygon(polygon, num_points=10000, with_hotspots=True):
+
+def generate_points_in_polygon(polygon=None, num_points=10000, with_hotspots=True):
     """
     Генерация точек внутри полигона.
 
