@@ -182,6 +182,7 @@ def update_map(selected_users, selected_categories, start_date, end_date, select
                                             "price_of_order", "type_of_payment",
                                             "latitude", "longitude"])
 
+    logging.info(f"Query: {sql_query}")
     # Log the number of records returned
     logging.info(f"Query returned {len(filtered_df)} records")
 
