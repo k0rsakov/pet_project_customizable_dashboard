@@ -128,3 +128,27 @@ source venv/bin/activate
 ```bash
 python app.py
 ```
+
+## Структура проекта
+
+### Полигоны
+
+Свои полигоны, сгенерированные с помощью [kepler.gl](https://kepler.gl/):
+
+```bash
+.
+├── polygon_data_left.json
+├── polygon_data_right.json
+└── polygon_data_up.json
+```
+
+### Генерация данных
+
+Запустите скрипт `generate_duckdb_sample_database.py` для генерации данных в указанных полигонах:
+
+```bash
+.
+└── generate_duckdb_sample_database.py
+```
+
+Изменить количество записей, полигоны и прочее можно в `generate_duckdb_sample_database.py`
