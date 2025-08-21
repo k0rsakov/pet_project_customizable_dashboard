@@ -34,12 +34,14 @@ def generate_points_in_polygon(polygon=None, num_points=10000, with_hotspots=Tru
     Генерация точек внутри полигона.
 
     Args:
+    ----
         polygon: Полигон, в котором нужно генерировать точки
         num_points: Количество точек для генерации
         with_hotspots: Использовать ли центры активности (True)
                       или равномерное распределение (False)
 
     Returns:
+    -------
         DataFrame с координатами сгенерированных точек
 
     """
