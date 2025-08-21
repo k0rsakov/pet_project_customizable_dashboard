@@ -1,4 +1,4 @@
-# pet_project_customizable_dashboard
+# Пишем свою BI-витрину при помощи DuckDB, Python и Dash
 
 Примерная схема БД:
 
@@ -50,13 +50,13 @@ erDiagram
         string category_name
     }
 
-    USERS      ||--o{ ORDERS : "places"
-    USER_TYPES ||--o{ USERS  : "is"
-    ORDERS     ||--o{ ORDER_DETAILS : "contains"
-    ORDER_DETAILS }o--|| PRODUCTS : "for"
-    PRODUCTS   }o--|| PRODUCT_CATEGORIES : "in"
-    ORDERS     }o--|| DELIVERIES : "delivered_by"
-    ORDERS     }o--|| PAYMENT_TYPES : "paid_with"
+    USERS ||--o{ ORDERS: "places"
+    USER_TYPES ||--o{ USERS: "is"
+    ORDERS ||--o{ ORDER_DETAILS: "contains"
+    ORDER_DETAILS }o--|| PRODUCTS: "for"
+    PRODUCTS }o--|| PRODUCT_CATEGORIES: "in"
+    ORDERS }o--|| DELIVERIES: "delivered_by"
+    ORDERS }o--|| PAYMENT_TYPES: "paid_with"
 ```
 
 Наша витрина:
@@ -75,6 +75,7 @@ erDiagram
 ```
 
 **Типовой SQL для витрины** (для примера):
+
 ```sql
 SELECT
   d.latitude,
@@ -96,7 +97,6 @@ GROUP BY
   d.latitude, d.longitude, ut.type_user, pc.category_name, o.ship_date, pt.type_of_payment
 ```
 
-
 ## Создание виртуального окружения
 
 ```bash
@@ -113,4 +113,18 @@ poetry install
 ```bash
 poetry lock && \
 poetry install
+```
+
+## Запуск приложения
+
+Активируем виртуальное окружение:
+
+```bash
+source venv/bin/activate
+```
+
+Запускаем приложение:
+
+```bash
+python app.py
 ```
